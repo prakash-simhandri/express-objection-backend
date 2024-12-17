@@ -1,0 +1,93 @@
+#!/usr/bin/env node
+
+/**
+ * Module dependencies.
+ */
+
+var app = require("../app");
+var debug = require("debug")("saya-utm-tracker:server");
+var http = require("http");
+const checkDatabaseConnection = require("../src/db/dbChecker"); // Adjust the path as needed
+
+/**
+ * Get port from environment and store in Express.
+ */
+var PORT = normalizePort(process.env.PORT || "3030");
+app.set("port", PORT);
+
+/**
+ * Create HTTP server.
+ */
+var server = http.createServer(app);
+
+/**
+ * Check database connection before starting the server.
+ */
+checkDatabaseConnection()
+  .then(() => {
+    // Start the HTTP server after successful DB connection
+    server.listen(PORT);
+    server.on("error", onError);
+    server.on("listening", onListening);
+  })
+  .catch((err) => {
+    console.error(
+      "❌ Server startup failed due to database error:",
+      err.message
+    );
+    process.exit(1); // Exit the process with failure code
+  });
+
+/**
+ * Normalize a port into a number, string, or false.
+ */
+function normalizePort(val) {
+  var port = parseInt(val, 10);
+
+  if (isNaN(port)) {
+    // named pipe
+    return val;
+  }
+
+  if (port >= 0) {
+    // port number
+    return port;
+  }
+
+  return false;
+}
+
+/**
+ * Event listener for HTTP server "error" event.
+ */
+function onError(error) {
+  if (error.syscall !== "listen") {
+    throw error;
+  }
+
+  var bind = typeof PORT === "string" ? "Pipe " + PORT : "Port " + PORT;
+
+  // handle specific listen errors with friendly messages
+  switch (error.code) {
+    case "EACCES":
+      console.error(bind + " requires elevated privileges");
+      process.exit(1);
+      break;
+    case "EADDRINUSE":
+      console.error(bind + " is already in use");
+      process.exit(1);
+      break;
+    default:
+      throw error;
+  }
+}
+
+/**
+ * Event listener for HTTP server "listening" event.
+ */
+function onListening() {
+  var addr = server.address();
+  var bind = typeof addr === "string" ? "pipe " + addr : "port " + addr.port;
+  debug("Listening on " + bind);
+  console.log(`✅ App is running on ${PORT} PORT!`);
+}
